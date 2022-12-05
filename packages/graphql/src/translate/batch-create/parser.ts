@@ -35,10 +35,15 @@ function getRelationshipFields(
     const refNodes: Node[] = [];
 
     if (relationField) {
-        if (relationField.interface || relationField.union) {
-            throw new UnsupportedUnwindOptimization(`Not supported operation: Interface or Union`);
-        }
-        else {
+        if (relationField.union) {
+            Object.keys(value as Record<string, any>).forEach((unionTypeName) => {
+                refNodes.push(context.nodes.find((x) => x.name === unionTypeName) as Node);
+            });
+        } else if (relationField.interface) {
+            relationField.interface?.implementations?.forEach((implementationName) => {
+                refNodes.push(context.nodes.find((x) => x.name === implementationName) as Node);
+            });
+        } else {
             refNodes.push(context.nodes.find((x) => x.name === relationField.typeMeta.name) as Node);
         }
     }
