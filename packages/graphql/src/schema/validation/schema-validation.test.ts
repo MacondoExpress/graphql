@@ -114,7 +114,7 @@ describe("schema validation", () => {
 
         test("should return errors when jwtPayload field is inside node filter", () => {
             const jwtType = `
-                type MyJWT  @jwtPayload {
+                type MyJWT @jwtPayload {
                     myClaim: String
                 }
             `;
