@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import type { ASTNode, EnterLeaveVisit, Visitor } from "./ast";
+import type { ASTNode, EnterLeaveVisit, LTNode, Visitor } from "./ast";
 
 class PrintVisit implements EnterLeaveVisit<ASTNode> {
     private level = 0;
@@ -43,6 +43,10 @@ export class PrintVisitor implements Visitor {
     public Filter: EnterLeaveVisit;
     public LiteralValue: EnterLeaveVisit;
     public EQ: EnterLeaveVisit;
+    public LT: EnterLeaveVisit;
+    public GT: EnterLeaveVisit;
+    public AND: EnterLeaveVisit;
+    public OR: EnterLeaveVisit;
     private sb: PrintVisit;
 
     constructor() {
@@ -54,6 +58,10 @@ export class PrintVisitor implements Visitor {
         this.Filter = this.sb;
         this.LiteralValue = this.sb;
         this.EQ = this.sb;
+        this.LT = this.sb;
+        this.GT = this.sb;
+        this.AND = this.sb;
+        this.OR = this.sb;
     }
 }
 
@@ -86,6 +94,11 @@ export class StatePrintVisitor implements Visitor {
     public Filter: EnterLeaveVisit;
     public LiteralValue: EnterLeaveVisit;
     public EQ: EnterLeaveVisit;
+    public LT: EnterLeaveVisit;
+    public GT: EnterLeaveVisit;
+    public AND: EnterLeaveVisit;
+    public OR: EnterLeaveVisit;
+
     private sb: StatePrintVisit;
 
     constructor() {
@@ -97,6 +110,10 @@ export class StatePrintVisitor implements Visitor {
         this.Filter = this.sb;
         this.LiteralValue = this.sb;
         this.EQ = this.sb;
+        this.LT = this.sb;
+        this.GT = this.sb;
+        this.AND = this.sb;
+        this.OR = this.sb;
     }
     print(): string {
         return this.sb.print();

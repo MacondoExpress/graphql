@@ -17,9 +17,8 @@
  * limitations under the License.
  */
 
-
 import Cypher from "@neo4j/cypher-builder";
-import type { AttributeNode, NodeNode, Visitor, ProjectionNode, ASTNode, Environment } from "./ast";
+import type { ASTNode, Environment } from "./ast";
 
 export const noop = () => false;
 
@@ -36,76 +35,8 @@ export class MiddleEnvironment implements Environment {
     getCypherBuilder(): Cypher.Clause | undefined {
         return this.cypherBuilder;
     }
-    
+
     getParent() {
         return this.frameStack[0];
-    }
-}
-
-export class Neo4j5Projection implements Visitor {
-    public env: MiddleEnvironment;
-    public topLevelRef: Cypher.Node | undefined;
-    public mapProjectionArg: {
-        projection: string[];
-        extraValues: Record<string, Cypher.Expr>;
-    };
-    private firstNode = true;
-    private currentRef: Cypher.Node | undefined;
-
-    constructor(env: MiddleEnvironment) {
-        this.env = env;
-        this.mapProjectionArg = { projection: [], extraValues: {} };
-    }
-
-    Node = {
-        enter: (nodeNode: NodeNode) => {
-            // Currently the query is structured as a first match and then nested sub-queries
-            if (this.firstNode) {
-                this.firstNode = false;
-                // topLevelRef is the old variable "this"
-                this.topLevelRef = new Cypher.Node({ labels: [nodeNode.model.name] });
-                const match = new Cypher.Match(this.topLevelRef);
-                this.env.setCypherBuilder(match);
-            } else {
-                console.log("step");
-            }
-        },
-        leave: noop,
-    };
-
-    Attribute = {
-        enter: noop,
-        leave: (attributeNode: AttributeNode) => {
-            this.mapProjectionArg.projection.push(attributeNode.model.name);
-        },
-    };
-}
-
-export class Neo4j5Render implements Visitor {
-    private projectionRender: Neo4j5Projection;
-    public env: MiddleEnvironment;
-
-    constructor() {
-        this.env = new MiddleEnvironment();
-        this.projectionRender = new Neo4j5Projection(this.env);
-    }
-    Projection = {
-        enter: (projectionNode: ProjectionNode) => {
-            projectionNode.visit(this.projectionRender);
-            return true; // stop traversal
-        },
-        leave: () => {
-            const topLevelRef = this.projectionRender?.topLevelRef as Cypher.Node;
-            const { projection, extraValues } = this.projectionRender.mapProjectionArg;
-            const cbReturn = new Cypher.Return([
-                new Cypher.MapProjection(topLevelRef, projection, extraValues),
-                topLevelRef,
-            ]);
-            this.env.setCypherBuilder(cbReturn);
-        },
-    };
-
-    render(): Cypher.CypherResult | undefined {
-        return this.env.getCypherBuilder()?.build();
     }
 }

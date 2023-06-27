@@ -18,7 +18,7 @@
  */
 
 import type { ConcreteEntity } from "../../schema-model/entity/ConcreteEntity";
-import type { Attribute } from "../../schema-model/attribute/Attribute";
+import type { Attribute, AttributeType } from "../../schema-model/attribute/Attribute";
 import type { Relationship } from "../../schema-model/relationship/Relationship";
 import { v4 as uuidv4 } from "uuid";
 
@@ -31,8 +31,15 @@ export abstract class ASTNode {
         this.children.push(node);
     }
 
-    public visit(visitor: Visitor): any {
-        return this.traverse(this, visitor);
+    public visit(visitor: Visitor, traverse = false): any {
+        const stopFlag = visitor[this.kind]?.enter && visitor[this.kind]?.enter(this);
+        visitor.env?.frameStack?.unshift(this);
+        let nestedResults: any[] = [];
+        if (!stopFlag && traverse) {
+            nestedResults = this.traverse(this, visitor);
+        }
+        visitor.env?.frameStack?.shift();
+        return visitor[this.kind]?.leave && visitor[this.kind]?.leave(this, nestedResults);
     }
 
     protected traverse(node: ASTNode, visitor: Visitor): any {
@@ -40,14 +47,7 @@ export abstract class ASTNode {
     }
 
     protected dfsTraverse(node: ASTNode, visitor: Visitor): any {
-        const continueFlag = visitor[node.kind]?.enter && visitor[node.kind]?.enter(this);
-        visitor.env?.frameStack?.unshift(this);
-        let nestedResults: any[] = [];
-        if (!continueFlag) {
-            nestedResults = node.children.map((child) => child.visit(visitor));
-        }
-        visitor.env?.frameStack?.shift();
-        return visitor[node.kind]?.leave && visitor[node.kind]?.leave(this, nestedResults);
+        return node.children.map((child) => child.visit(visitor, true));
     }
 }
 
@@ -59,6 +59,12 @@ export enum NodeKind {
     Filter = "Filter",
     LiteralValue = "LiteralValue",
     EQ = "EQ",
+    NEQ = "NEQ",
+    GT = "GT",
+    LT = "LT",
+    AND = "AND",
+    OR = "OR",
+    NOT = "NOT",
 }
 
 export type EnterLeaveVisit<T = ASTNode> = {
@@ -74,6 +80,12 @@ export interface CompleteVisitor {
     Filter: EnterLeaveVisit<FilterNode>;
     LiteralValue: EnterLeaveVisit<LiteralValueNode>;
     EQ: EnterLeaveVisit<EQNode>;
+    NEQ: EnterLeaveVisit<NEQNode>;
+    GT: EnterLeaveVisit<GTNode>;
+    LT: EnterLeaveVisit<LTNode>;
+    OR: EnterLeaveVisit<ORNode>;
+    AND: EnterLeaveVisit<ANDNode>;
+    NOT: EnterLeaveVisit<ANDNode>;
     env: Environment;
 }
 
@@ -133,13 +145,95 @@ export class AttributeNode extends ASTNode {
 }
 export class FilterNode extends ASTNode {
     public kind = NodeKind.Filter;
+
+    // I guess we concatenate the filters children with AND
+    public addChildren(node: ASTNode): FilterNode {
+        super.addChildren(node);
+        return this;
+    }
 }
 
 export class EQNode extends ASTNode {
     public kind = NodeKind.EQ;
+    public left: AttributeNode;
+    public right: LiteralValueNode;
+
+    constructor(left: AttributeNode, right: LiteralValueNode) {
+        super();
+        super.addChildren(left);
+        super.addChildren(right);
+        this.left = left;
+        this.right = right;
+    }
 }
+
+export class NEQNode extends ASTNode {
+    public kind = NodeKind.NEQ;
+    public left: AttributeNode;
+    public right: LiteralValueNode;
+
+    constructor(left: AttributeNode, right: LiteralValueNode) {
+        super();
+        super.addChildren(left);
+        super.addChildren(right);
+        this.left = left;
+        this.right = right;
+    }
+}
+
+export class GTNode extends ASTNode {
+    public kind = NodeKind.GT;
+    public left: AttributeNode;
+    public right: LiteralValueNode;
+
+    constructor(left: AttributeNode, right: LiteralValueNode) {
+        super();
+        super.addChildren(left);
+        super.addChildren(right);
+        this.left = left;
+        this.right = right;
+    }
+}
+
+export class LTNode extends ASTNode {
+    public kind = NodeKind.GT;
+    public left: AttributeNode;
+    public right: LiteralValueNode;
+
+    constructor(left: AttributeNode, right: LiteralValueNode) {
+        super();
+        super.addChildren(left);
+        super.addChildren(right);
+        this.left = left;
+        this.right = right;
+    }
+}
+export class ANDNode extends ASTNode {
+    public kind = NodeKind.AND;
+
+    public addChildren(node: ASTNode): FilterNode {
+        super.addChildren(node);
+        return this;
+    }
+}
+
+export class ORNode extends ASTNode {
+    public kind = NodeKind.OR;
+
+    public addChildren(node: ASTNode): FilterNode {
+        super.addChildren(node);
+        return this;
+    }
+}
+
 export class LiteralValueNode extends ASTNode {
     public kind = NodeKind.LiteralValue;
+    public value: any;
+
+    constructor(value: any) {
+        super();
+        this.value = value;
+    }
 }
 
 export class ProjectionNode extends ASTNode {
