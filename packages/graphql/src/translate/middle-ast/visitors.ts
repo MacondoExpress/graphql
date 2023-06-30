@@ -17,26 +17,12 @@
  * limitations under the License.
  */
 
-import Cypher from "@neo4j/cypher-builder";
+
 import type { ASTNode, Environment } from "./ast";
 
 export const noop = () => false;
 
 export class MiddleEnvironment implements Environment {
     public frameStack: ASTNode[] = [];
-    private cypherBuilder: Cypher.Clause | undefined;
-    setCypherBuilder(clause: Cypher.Clause) {
-        if (this.cypherBuilder) {
-            this.cypherBuilder = Cypher.concat(this.cypherBuilder, clause);
-        } else {
-            this.cypherBuilder = clause;
-        }
-    }
-    getCypherBuilder(): Cypher.Clause | undefined {
-        return this.cypherBuilder;
-    }
 
-    getParent() {
-        return this.frameStack[0];
-    }
 }

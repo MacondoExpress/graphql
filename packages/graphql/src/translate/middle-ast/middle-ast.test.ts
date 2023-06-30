@@ -195,77 +195,7 @@ describe("middle-ast", () => {
         expect(params).toStrictEqual({});
     });
 
-    it.skip("relationship projection with more than one relationships", () => {
-        /** query
-         * query Actors {
-         *   actors {
-         *     name
-         *     anotherName
-         *     partner {
-         *      name
-         *     }
-         *     movies {
-         *       title
-         *     }
-         *   }
-         * }
-         **/
-        /** expected
-         * MATCH (this:`Actor`)
-         * CALL {
-         *     WITH this
-         *     MATCH (this)-[this0:ACTED_IN]->(this1:`Movie`)
-         *     WITH this1 { .title } AS this1
-         *     RETURN collect(this1) AS var2
-         * }
-         * RETURN this { .name, .anotherName, movies: var2 } AS this
-         */
 
-        const actorEntity = schemaModel.getEntity("Actor") as ConcreteEntity;
-        const movieEntity = schemaModel.getEntity("Movie") as ConcreteEntity;
-        const actorMoviesModel = actorEntity.findRelationship("movies") as Relationship;
-        const actorAttributeName = actorEntity.findAttribute("name") as Attribute;
-        const actorAttributeAnotherName = actorEntity.findAttribute("anotherName") as Attribute;
-        const movieAttributeTitle = movieEntity.findAttribute("title") as Attribute;
-
-        const actor = new NodeNode(actorEntity);
-        const actedIn = new RelationshipNode(actorMoviesModel);
-        const movie = new NodeNode(movieEntity);
-
-        actor.addRelationship(actedIn);
-        actedIn.addNode(movie);
-        actor.addAttribute(new AttributeNode(actorAttributeName));
-        actor.addAttribute(new AttributeNode(actorAttributeAnotherName));
-        movie.addAttribute(new AttributeNode(movieAttributeTitle));
-
-        const projection = new ProjectionNode().addNode(actor);
-        const printVisitor = new PrintVisitor();
-        expect(projection.visit(printVisitor, true)).toMatchInlineSnapshot(`
-            "Projection
-            │  ├─ Node
-            │     ├─ Relationship
-            │        ├─ Node
-            │           ├─ Attribute
-            │     ├─ Attribute
-            │     ├─ Attribute
-            "
-        `);
-        const neo4j5Render = new Neo4j5Render();
-        projection.visit(neo4j5Render);
-        const clause = neo4j5Render.build();
-        const { cypher, params } = clause.build();
-        expect(cypher).toMatchInlineSnapshot(`
-            "MATCH (this0:\`Actor\`)
-            CALL {
-                WITH this0
-                MATCH (this0:\`Actor\`)-[this1:ACTED_IN]->(this2:\`Movie\`)
-                WITH this2 { .title } AS this2
-                RETURN collect(this2) AS var3
-            }
-            RETURN this0 { .name, .anotherName, movies: var3 } AS this0"
-        `);
-        expect(params).toStrictEqual({});
-    });
 
     describe("filters", () => {
         describe("on TOP level", () => {
@@ -623,56 +553,6 @@ describe("middle-ast", () => {
                     param3: "AnotherStuff",
                 });
             });
-        });
-        describe("on nested levels", () => {
-            it("projection with filters, EQ", () => {
-                /** query {
-                 * actors(where: { name: "Stuff" }) {
-                 *   name
-                 *   anotherName
-                 * }
-                 **/
-                /** expected
-                 * MATCH (this:`Actor`)
-                 * WHERE this.name = "Stuff"
-                 * RETURN this { .name, .anotherName } AS this
-                 */
-                const actorEntity = schemaModel.getEntity("Actor") as ConcreteEntity;
-                const actor = new NodeNode(actorEntity);
-                const actorAttributeName = actorEntity.findAttribute("name") as Attribute;
-                const actorAttributeAnotherName = actorEntity.findAttribute("anotherName") as Attribute;
-                const actorName = new AttributeNode(actorAttributeName);
-                actor.addAttribute(actorName);
-                actor.addAttribute(new AttributeNode(actorAttributeAnotherName));
-                const actorFilter = new FilterNode().addChildren(new EQNode(actorName, new LiteralValueNode("Stuff")));
-                actor.addFilter(actorFilter);
-                const projection = new ProjectionNode().addNode(actor);
-                const printVisitor = new PrintVisitor();
-                expect(projection.visit(printVisitor, true)).toMatchInlineSnapshot(`
-            "Projection
-            │  ├─ Node
-            │     ├─ Attribute
-            │     ├─ Attribute
-            │     ├─ Filter
-            │        ├─ EQ
-            │           ├─ Attribute
-            │           ├─ LiteralValue
-            "
-        `);
-                const neo4j5Render = new Neo4j5Render();
-                projection.visit(neo4j5Render);
-                const clause = neo4j5Render.build();
-                const { cypher, params } = clause.build();
-                expect(cypher).toMatchInlineSnapshot(`
-            "MATCH (this0:\`Actor\`)
-            WHERE this0.name = $param0
-            RETURN this0 { .name, .anotherName } AS this0"
-        `);
-                expect(params).toStrictEqual({
-                    param0: "Stuff",
-                });
-            });
-
         });
     });
 });

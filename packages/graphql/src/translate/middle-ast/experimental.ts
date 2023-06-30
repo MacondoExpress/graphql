@@ -137,30 +137,6 @@ class SubQueryProjection implements Visitor {
                 new Cypher.Pattern(this.parentRef).related(relationship).to(targetNodeRef)
             );
 
-         /*    if (relationshipFilterNode || nodeFilterNode) {
-                if (relationshipFilterNode) {
-                    const relationshipPatternFilter = new PatternFilter(
-                        this.env,
-                        this.parentRef,
-                        relationship,
-                        targetNodeRef
-                    );
-                    relationshipFilterNode.children.map((child) => {
-                        child.visit(relationshipPatternFilter);
-                    });
-                    cypherMatch.where(relationshipPatternFilter.build());
-                }
-                if (nodeFilterNode) {
-                    const nodePatternFilter = new PatternFilter(this.env, this.parentRef, relationship, targetNodeRef);
-                    nodeFilterNode.children.forEach((child) => {
-                        child.visit(nodePatternFilter);
-                    });
-                    relationshipFilterNode
-                        ? cypherMatch.and(nodePatternFilter.build())
-                        : cypherMatch.where(nodePatternFilter.build());
-                }
-            } */
-            // TODO: reused logic for projection, when the AST design is more stable move to utility function
             const targetNodeAttributes = (
                 targetNode.children.filter((child) => child.kind === NodeKind.Attribute) as AttributeNode[]
             ).map((attributeNode: AttributeNode) => {
