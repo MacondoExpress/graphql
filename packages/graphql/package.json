@@ -45,7 +45,8 @@
         "build:clean": "run-s clean build",
         "watch": "tsc -w",
         "start": "run-s build:clean watch",
-        "performance": "ts-node tests/performance/performance.ts"
+        "performance": "ts-node tests/performance/performance.ts",
+        "build-benchmark-workflow": "ts-node tests/performance/build-benchmark-workflow.ts"
     },
     "author": "Neo4j Inc.",
     "devDependencies": {
